@@ -1,5 +1,6 @@
 package nl.top.reactivemongodb.model;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +18,8 @@ import java.time.LocalDateTime;
 public class BeerDTO {
 
     //validation is required in the DTO
-    private Integer id;
+    private String id;
+    @NotBlank
     @Size(min = 3, max = 255)
     private String beerName;
     private BeerStyle beerStyle;

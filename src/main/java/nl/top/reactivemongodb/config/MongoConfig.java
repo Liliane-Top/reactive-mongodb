@@ -19,4 +19,15 @@ public class MongoConfig extends AbstractReactiveMongoConfiguration {
     public MongoClient mongoClient() {
         return MongoClients.create();
     }
+
+    //this is required if you use a Docker image in which you have set up client credentials
+//    @Override
+//    protected void configureClientSettings(MongoClientSettings.Builder builder) {
+//        builder.credential(MongoCredential.createCredential("root",
+//                        "admin", "example".toCharArray()))
+//                .applyToClusterSettings(settings ->
+//                        settings.hosts((singletonList(new ServerAddress("127.0.0.1", 27017)))));
+//    }
+
+
 }

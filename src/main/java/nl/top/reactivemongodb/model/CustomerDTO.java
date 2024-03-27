@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 public class CustomerDTO {
     //Validation in DTO other annotation in domain layer
-    private Integer id;
+    private String id;
     @Size(min = 3, max = 255)
     private String customerName;
     private LocalDateTime createdDate;
