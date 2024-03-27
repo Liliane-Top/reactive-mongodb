@@ -85,12 +85,20 @@ class BeerServiceImplTest {
         final String newName = "Heineken";
         BeerDTO savedBeerDTO = getSavedBeerDTO();
         savedBeerDTO.setBeerName(newName);
+        AtomicReference<BeerDTO> atomicReference = new AtomicReference<>();
+        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
+        Mono<BeerDTO> savedMono = beerService.saveBeer(Mono.just(savedBeerDTO));
 
-        BeerDTO updatedDTO = beerService.saveBeer(Mono.just(savedBeerDTO)).block();
+      savedMono.subscribe(savedBeer -> {
+          atomicBoolean.set(true);
+          atomicReference.set(savedBeer);
+      });
 
-        //verify it exists in db
-        BeerDTO fetchedDTO = beerService.getBeerById(updatedDTO.getId()).block();
-        assertThat(fetchedDTO.getBeerName()).isEqualTo(newName);
+      await().untilTrue(atomicBoolean);
+      Mono<BeerDTO> updatedBeerDTO = beerService.updateBeer(atomicReference.get().getId(), atomicReference.get());
+      updatedBeerDTO.subscribe(beerDTO1 -> {
+          assertThat(beerDTO1.getBeerName().equals(newName));
+      });
     }
 
     @Test
