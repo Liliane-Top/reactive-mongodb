@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @SpringBootTest
 class BeerServiceImplTest {
@@ -89,16 +90,16 @@ class BeerServiceImplTest {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         Mono<BeerDTO> savedMono = beerService.saveBeer(Mono.just(savedBeerDTO));
 
-      savedMono.subscribe(savedBeer -> {
-          atomicBoolean.set(true);
-          atomicReference.set(savedBeer);
-      });
+        savedMono.subscribe(savedBeer -> {
+            atomicBoolean.set(true);
+            atomicReference.set(savedBeer);
+        });
 
-      await().untilTrue(atomicBoolean);
-      Mono<BeerDTO> updatedBeerDTO = beerService.updateBeer(atomicReference.get().getId(), atomicReference.get());
-      updatedBeerDTO.subscribe(beerDTO1 -> {
-          assertThat(beerDTO1.getBeerName().equals(newName));
-      });
+        await().untilTrue(atomicBoolean);
+        Mono<BeerDTO> updatedBeerDTO = beerService.updateBeer(atomicReference.get().getId(), atomicReference.get());
+        updatedBeerDTO.subscribe(beerDTO1 -> {
+            assertThat(beerDTO1.getBeerName().equals(newName));
+        });
     }
 
     @Test
@@ -126,19 +127,22 @@ class BeerServiceImplTest {
     @DisplayName("Test Patch Beer Reactive Stream")
     void testPatchBeerStreaming() {
         final Integer quantity = 20;
-        AtomicReference<BeerDTO> atomicReference = new AtomicReference<>();
+        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
 
-       BeerDTO savedBeer = getSavedBeerDTO();
-       savedBeer.setQuantityOnHand(quantity);
+        BeerDTO savedBeer = getSavedBeerDTO();
+        assertThat(savedBeer.getQuantityOnHand()).isEqualTo(12);
+        assertFalse(savedBeer.getBeerStyle().equals(BeerStyle.PORTER));
+        savedBeer.setQuantityOnHand(quantity);
 
-       beerService.patchBeer(savedBeer.getId(), savedBeer);
+        Mono<BeerDTO> mono = beerService.patchBeer(savedBeer.getId(), savedBeer);
+        mono.subscribe(updatedBeer -> {
+            beerService.getBeerById(updatedBeer.getId());
+            assertThat(updatedBeer.getQuantityOnHand()).isEqualTo(20);
+            assertThat(updatedBeer.getBeerName()).isEqualTo("Space Dust");
+            atomicBoolean.set(true);
+        });
 
-        await().until(() -> atomicReference.get() != null);
-
-//        Mono<BeerDTO> result = beerService.patchBeer(atomicReference.get().getId(), atomicReference.get());
-
-        assertThat(atomicReference.get().getBeerName()).isEqualTo("Space Dust");
-        assertThat(atomicReference.get().getQuantityOnHand()).isEqualTo(quantity);
+        await().untilTrue(atomicBoolean);
     }
 
     @Test
@@ -217,7 +221,7 @@ class BeerServiceImplTest {
         await().until(() -> atomicDto.get() != null);
 
         beerService.patchBeer(atomicDto.get().getId(), atomicDto.get())
-                .subscribe( beerDto -> {
+                .subscribe(beerDto -> {
                     System.out.println(beerDto.getBeerName());
                 });
     }
