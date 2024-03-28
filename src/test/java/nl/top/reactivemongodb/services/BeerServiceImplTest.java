@@ -36,7 +36,7 @@ class BeerServiceImplTest {
         beerDTO = beerMapper.beerTobeerDTO(getTestBeer());
     }
 
-    private Beer getTestBeer() {
+    public static Beer getTestBeer() {
         return Beer.builder()
                 .beerName("Space Dust")
                 .beerStyle(BeerStyle.IPA)
@@ -48,11 +48,11 @@ class BeerServiceImplTest {
                 .build();
     }
 
-    private BeerDTO getTestBeerDTO() {
+    public BeerDTO getTestBeerDTO() {
         return beerMapper.beerTobeerDTO(getTestBeer());
     }
 
-    private BeerDTO getSavedBeerDTO() {
+    public BeerDTO getSavedBeerDTO() {
         return beerService.saveBeer(Mono.just(getTestBeerDTO())).block();
     }
 
