@@ -1,6 +1,7 @@
 package nl.top.reactivemongodb.services;
 
 import lombok.RequiredArgsConstructor;
+import nl.top.reactivemongodb.domain.BeerStyle;
 import nl.top.reactivemongodb.mapper.BeerMapper;
 import nl.top.reactivemongodb.model.BeerDTO;
 import nl.top.reactivemongodb.repositories.BeerRepository;
@@ -19,6 +20,17 @@ public class BeerServiceImpl implements BeerService {
     @Override
     public Flux<BeerDTO> listBeers() {
         return beerRepository.findAll().map(beerMapper::beerTobeerDTO);
+    }
+
+    @Override
+    public Flux<BeerDTO> findByBeerStyle(BeerStyle beerStyle) {
+        return beerRepository.findByBeerStyle(beerStyle).map(beerMapper::beerTobeerDTO);
+    }
+
+    @Override
+    public Mono<BeerDTO> findFirstByBeerName(String beerName) {
+        return beerRepository.findFirstByBeerName(beerName)
+                .map(beerMapper::beerTobeerDTO);
     }
 
     @Override
