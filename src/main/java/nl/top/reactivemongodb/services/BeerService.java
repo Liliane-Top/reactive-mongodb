@@ -19,7 +19,7 @@ public interface BeerService {
 
     Mono<BeerDTO> updateBeer(String beerId, BeerDTO beerDTO);
 
-    Mono<BeerDTO> patchBeer(String beerId, BeerDTO beerDTO);
+    Mono<BeerDTO> patchBeerById(String beerId, BeerDTO beerDTO);
 
     Mono<Void> deleteBeerById(String beerId);
 }

@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class BeerDTO {
-
     //validation is required in the DTO
     private String id;
     @NotBlank

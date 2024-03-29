@@ -175,7 +175,7 @@ class BeerServiceImplTest {
         savedBeer.setBeerStyle(null);
         savedBeer.setBeerName(null);
 
-        Mono<BeerDTO> mono = beerService.patchBeer(savedBeer.getId(), savedBeer);
+        Mono<BeerDTO> mono = beerService.patchBeerById(savedBeer.getId(), savedBeer);
         mono.subscribe(patcheddBeer -> {
             beerService.getBeerById(patcheddBeer.getId());
             assertThat(patcheddBeer.getQuantityOnHand()).isEqualTo(20);
@@ -261,7 +261,7 @@ class BeerServiceImplTest {
 
         await().until(() -> atomicDto.get() != null);
 
-        beerService.patchBeer(atomicDto.get().getId(), atomicDto.get())
+        beerService.patchBeerById(atomicDto.get().getId(), atomicDto.get())
                 .subscribe(beerDto -> {
                     System.out.println(beerDto.getBeerName());
                 });

@@ -9,7 +9,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
-import static nl.top.reactivemongodb.web.fn.BeerRouterConfig.*;
+import static nl.top.reactivemongodb.web.fn.BeerRouterConfig.BEER_PATH_ID;
 
 @Component
 @RequiredArgsConstructor
@@ -39,13 +39,13 @@ public class BeerHandler {
 
     public Mono<ServerResponse> updateBeerById(ServerRequest request) {
         return request.bodyToMono(BeerDTO.class)
-                .map(beerDTO -> beerService.updateBeer(request.pathVariable("beerId"), beerDTO))
+                .flatMap(beerDTO -> beerService.updateBeer(request.pathVariable("beerId"), beerDTO))
                 .flatMap(savedDTO -> ServerResponse.noContent().build());
     }
 
     public Mono<ServerResponse> patchBeerById(ServerRequest request) {
         return request.bodyToMono(BeerDTO.class)
-                .map(beerDTO -> beerService.patchBeer(request.pathVariable("beerId"), beerDTO))
+                .flatMap(beerDTO -> beerService.patchBeerById(request.pathVariable("beerId"), beerDTO))
                 .flatMap(savedDTO -> ServerResponse.noContent().build());
     }
 

@@ -79,7 +79,8 @@ class BeerHandlerTest {
     @Test
     @Order(2)
     void getBeerById() {
-        webTestClient.get().uri(BEER_PATH_ID, 1)
+        BeerDTO testBeer = getSavedBeerDTO();
+        webTestClient.get().uri(BEER_PATH_ID, testBeer.getId())
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().valueEquals("Content-type", "application/json")
@@ -203,12 +204,19 @@ class BeerHandlerTest {
     @Test
     @Order(12)
     void deleteBeer() {
+        BeerDTO testBeer = getSavedBeerDTO();
         webTestClient
                 .delete()
-                .uri(BEER_PATH_ID, 3)
+                .uri(BEER_PATH_ID, testBeer.getId())
                 .header("Content-type", "application/json")
                 .exchange()
                 .expectStatus().isNoContent();
+
+        webTestClient.get().uri(BEER_PATH_ID, testBeer.getId())
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectHeader().valueEquals("Content-type", "application/json")
+                .expectBody(BeerDTO.class);
     }
 
     @Test
