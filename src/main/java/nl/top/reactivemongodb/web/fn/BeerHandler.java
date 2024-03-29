@@ -21,10 +21,12 @@ public class BeerHandler {
 
     public Mono<ServerResponse> listBeers(ServerRequest request) {
         Flux<BeerDTO> flux;
-        if(request.queryParam("beerStyle").isPresent()) {
+        if (request.queryParam("beerStyle").isPresent()) {
             flux = beerService.findByBeerStyle(BeerStyle.valueOf(request.queryParam("beerStyle").get()));
-        } else  {
-            flux =beerService.listBeers();
+        } else if (request.queryParam("beerName").isPresent()) {
+            flux = beerService.findFirstByBeerName(request.queryParam("beerName").get()).flux();
+        } else {
+            flux = beerService.listBeers();
         }
         return ServerResponse
                 .ok()
@@ -39,7 +41,7 @@ public class BeerHandler {
 
     public Mono<ServerResponse> createNewBeer(ServerRequest request) {
         return request.bodyToMono(BeerDTO.class)
-                .flatMap(beerDTO -> beerService.saveBeer(beerDTO))
+                .flatMap(beerService::saveBeer)
                 .flatMap(savedBeer -> ServerResponse.created(UriComponentsBuilder
                         .fromPath(BEER_PATH_ID)
                         .build(savedBeer.getId())).build());

@@ -71,6 +71,19 @@ class BeerHandlerTest {
     }
 
     @Test
+    void findFirstByBeerName() {
+
+        webTestClient.get().uri(UriComponentsBuilder
+                .fromPath(BEER_PATH)
+                .queryParam("beerName", "Crank").build().toUri())
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("Content-Type", "application/json")
+                .expectBody().jsonPath("$.size()").value(equalTo(1));
+
+    }
+
+    @Test
     @Disabled
     @Order(99)
     void emptyListBeer(){
