@@ -9,6 +9,8 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+import static nl.top.reactivemongodb.web.fn.BeerRouterConfig.*;
+
 @Component
 @RequiredArgsConstructor
 public class BeerHandler {
@@ -28,13 +30,27 @@ public class BeerHandler {
     }
 
     public Mono<ServerResponse> createNewBeer(ServerRequest request) {
-        return beerService.saveBeer(request.bodyToMono(BeerDTO.class))
-                .flatMap(beerDTO -> ServerResponse
-                        .created(UriComponentsBuilder
-                                .fromPath(BeerRouterConfig.BEER_PATH_ID)
-                                .build(beerDTO.getId()))
-                        .build());
+        return request.bodyToMono(BeerDTO.class)
+                .flatMap(beerDTO -> beerService.saveBeer(beerDTO))
+                .flatMap(savedBeer -> ServerResponse.created(UriComponentsBuilder
+                        .fromPath(BEER_PATH_ID)
+                        .build(savedBeer.getId())).build());
+    }
 
+    public Mono<ServerResponse> updateBeerById(ServerRequest request) {
+        return request.bodyToMono(BeerDTO.class)
+                .map(beerDTO -> beerService.updateBeer(request.pathVariable("beerId"), beerDTO))
+                .flatMap(savedDTO -> ServerResponse.noContent().build());
+    }
 
+    public Mono<ServerResponse> patchBeerById(ServerRequest request) {
+        return request.bodyToMono(BeerDTO.class)
+                .map(beerDTO -> beerService.patchBeer(request.pathVariable("beerId"), beerDTO))
+                .flatMap(savedDTO -> ServerResponse.noContent().build());
+    }
+
+    public Mono<ServerResponse> deleteBeerById(ServerRequest request) {
+        return beerService.deleteBeerById(request.pathVariable("beerId"))
+                .then(ServerResponse.noContent().build());
     }
 }
