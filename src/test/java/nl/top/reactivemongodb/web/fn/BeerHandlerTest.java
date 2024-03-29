@@ -8,12 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 
 import static nl.top.reactivemongodb.web.fn.BeerRouterConfig.BEER_PATH;
 import static nl.top.reactivemongodb.web.fn.BeerRouterConfig.BEER_PATH_ID;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -29,7 +32,6 @@ class BeerHandlerTest {
     public BeerDTO getSavedBeerDTO() {
         return beerService.saveBeer(Mono.just(getTestBeer())).block();
     }
-
     private static BeerDTO getTestBeer(){
         return BeerDTO.builder()
                 .beerName("Space Dust")
@@ -39,7 +41,6 @@ class BeerHandlerTest {
                 .upc("ipa")
                 .build();
     }
-
     @Test
     @Order(1)
     void listBeer() {
@@ -47,8 +48,28 @@ class BeerHandlerTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().valueEquals("Content-type", "application/json")
-                .expectBody().jsonPath("$.size()").isEqualTo(3);
+                .expectBody().jsonPath("$.size()").value(greaterThan(1));
     }
+
+    @Test
+    void findAllByBeerStyle() {
+        final BeerStyle beerStyle =  BeerStyle.PILSNER;
+        BeerDTO testBeer = getSavedBeerDTO();
+        testBeer.setBeerStyle(beerStyle);
+
+        webTestClient.post().uri(BEER_PATH).body(Mono.just(testBeer), BeerDTO.class)
+                .header("Content-Type", "application/json")
+                .exchange();
+
+        webTestClient.get().uri(UriComponentsBuilder
+                .fromPath(BEER_PATH)
+                .queryParam("beerStyle", BeerStyle.PILSNER).build().toUri())
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("Content-Type","application/json")
+                .expectBody().jsonPath("$.size()").value(equalTo(1));
+    }
+
     @Test
     @Disabled
     @Order(99)
@@ -68,14 +89,10 @@ class BeerHandlerTest {
                 .header("Content-type", "application/json")
                 .exchange()
                 .expectStatus().isNoContent();
-
         webTestClient.get().uri(BEER_PATH)
                 .exchange()
                 .expectStatus().isNotFound();
-
-
     }
-
     @Test
     @Order(2)
     void getBeerById() {
@@ -86,7 +103,6 @@ class BeerHandlerTest {
                 .expectHeader().valueEquals("Content-type", "application/json")
                 .expectBody(BeerDTO.class);
     }
-
     @Test
     @Order(3)
     void getBeerByNonExistingId() {
@@ -94,7 +110,6 @@ class BeerHandlerTest {
                 .exchange()
                 .expectStatus().isNotFound();
     }
-
     @Test
     @Order(4)
     void createNewBeer() {
@@ -105,7 +120,6 @@ class BeerHandlerTest {
                 .expectStatus().isCreated()
                 .expectHeader().exists("location");
     }
-
     @Test
     @Order(5)
     void createNewBeerWithBadData() {

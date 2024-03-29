@@ -1,12 +1,14 @@
 package nl.top.reactivemongodb.web.fn;
 
 import lombok.RequiredArgsConstructor;
+import nl.top.reactivemongodb.domain.BeerStyle;
 import nl.top.reactivemongodb.model.BeerDTO;
 import nl.top.reactivemongodb.services.BeerService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static nl.top.reactivemongodb.web.fn.BeerRouterConfig.BEER_PATH_ID;
@@ -18,9 +20,15 @@ public class BeerHandler {
     private final BeerService beerService;
 
     public Mono<ServerResponse> listBeers(ServerRequest request) {
+        Flux<BeerDTO> flux;
+        if(request.queryParam("beerStyle").isPresent()) {
+            flux = beerService.findByBeerStyle(BeerStyle.valueOf(request.queryParam("beerStyle").get()));
+        } else  {
+            flux =beerService.listBeers();
+        }
         return ServerResponse
                 .ok()
-                .body(beerService.listBeers(), BeerDTO.class);
+                .body(flux, BeerDTO.class);
     }
 
     public Mono<ServerResponse> getBeerById(ServerRequest request) {
