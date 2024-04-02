@@ -9,14 +9,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -33,7 +37,7 @@ class BeerServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        beerDTO = beerMapper.beerTobeerDTO(getTestBeer());
+        beerDTO = beerMapper.beerToBeerDTO(getTestBeer());
     }
 
     public static Beer getTestBeer() {
@@ -49,7 +53,7 @@ class BeerServiceImplTest {
     }
 
     public BeerDTO getTestBeerDTO() {
-        return beerMapper.beerTobeerDTO(getTestBeer());
+        return beerMapper.beerToBeerDTO(getTestBeer());
     }
 
     public BeerDTO getSavedBeerDTO() {
@@ -57,6 +61,7 @@ class BeerServiceImplTest {
     }
 
     @Test
+    @DisplayName("Test to find the first beer by beerName using subscribe")
     void findFirstByBeerName() {
         BeerDTO beerDTO1 = getSavedBeerDTO();
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
@@ -64,14 +69,15 @@ class BeerServiceImplTest {
         Mono<BeerDTO> foundDTO = beerService.findFirstByBeerName(beerDTO1.getBeerName());
 
         foundDTO.subscribe(foundBeer -> {
-                    System.out.println(foundBeer.toString());
+                    assertThat(foundBeer.getBeerStyle()).isEqualTo(BeerStyle.IPA);
                     atomicBoolean.set(true);
                 }
         );
-        await().untilTrue(atomicBoolean);
+        await().atMost(Duration.ofSeconds(5)).untilTrue(atomicBoolean);
     }
 
     @Test
+    @DisplayName("Test to find all beers by a certain Beerstyle")
     void findAllByBeerStyle() {
         BeerDTO beerDTO1 = getSavedBeerDTO();
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
@@ -79,11 +85,11 @@ class BeerServiceImplTest {
         beerService.findByBeerStyle(beerDTO1.getBeerStyle())
                 .subscribe(dto ->
                 {
-                    System.out.println(dto.toString());
+                    assertThat(dto.getBeerStyle()).isEqualTo(BeerStyle.IPA);
                     atomicBoolean.set(true);
                 });
 
-        await().untilTrue(atomicBoolean);
+        await().atMost(Duration.ofSeconds(5)).untilTrue(atomicBoolean);
     }
 
     @Test
@@ -94,9 +100,6 @@ class BeerServiceImplTest {
         Mono<BeerDTO> savedMono = beerService.saveBeer(beerDTO);
 
         savedMono.subscribe(savedBeer -> {
-            System.out.println(savedBeer.getId());
-            System.out.println(savedBeer.getBeerName());
-            // assertThat(savedBeer.getBeerName().equals("Space")); //FIXME this doesn't assert anything as the combination of asserThat and equals() do not work together
             assertThat(savedBeer.getBeerName()).isEqualTo("Space Dust");//but this works fine
             assertThat(savedBeer.getId()).isNotNull();
 
@@ -134,7 +137,7 @@ class BeerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test Update Beer Reactive Stream")
+    @DisplayName("Test Update Beer using subscribe")
     void testUpdateBeerStreaming() {
         final String newName = "Heineken";
         BeerDTO beerToBeUpdated = getTestBeerDTO();
@@ -163,7 +166,7 @@ class BeerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test Patch Beer Reactive Stream")
+    @DisplayName("Test Patch Beer subscribe")
     void testPatchBeerStreaming() {
         final Integer quantity = 20;
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
@@ -173,7 +176,6 @@ class BeerServiceImplTest {
         assertFalse(savedBeer.getBeerStyle().equals(BeerStyle.PORTER));
         savedBeer.setQuantityOnHand(quantity);
         savedBeer.setBeerStyle(null);
-        savedBeer.setBeerName(null);
 
         Mono<BeerDTO> mono = beerService.patchBeerById(savedBeer.getId(), savedBeer);
         mono.subscribe(patcheddBeer -> {
@@ -187,6 +189,7 @@ class BeerServiceImplTest {
     }
 
     @Test
+    @DisplayName("Test save beer with subscribe")
     void saveBeer() {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         AtomicReference<BeerDTO> atomicReference = new AtomicReference<>();
@@ -201,19 +204,22 @@ class BeerServiceImplTest {
     }
 
     @Test
+    @DisplayName("Test save beer with subscribe without atomicReference")
     void saveBeer2() {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         Mono<BeerDTO> savedMono = beerService.saveBeer(beerDTO);
+
         savedMono.subscribe(savedDTO ->
         {
-            System.out.println(savedDTO.getId());
+            assertThat(savedDTO.getQuantityOnHand()).isEqualTo(12);
             atomicBoolean.set(true);
         });
 
-        await().untilTrue(atomicBoolean);
+        await().atMost(Duration.ofSeconds(5)).untilTrue(atomicBoolean);
     }
 
     @Test
+    @DisplayName("Test get beer by beerId using subscribe")
     void getBeerById() {
         AtomicReference<BeerDTO> atomicReference = new AtomicReference<>();
         beerService.saveBeer(Mono.just(getTestBeerDTO()))
@@ -227,30 +233,40 @@ class BeerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test delete beer by beerId Streaming")
+    @DisplayName("Test delete beer by beerId using subscribe")
     void deleteBeerByIdStreaming() {
-        AtomicReference<BeerDTO> atomicReference = new AtomicReference<>();
-        beerService.saveBeer(Mono.just(getTestBeerDTO()))
-                .flatMap(beerService::saveBeer)
-                .flatMap(saveddBeerDTO -> beerService.getBeerById(saveddBeerDTO.getId())) // from db
-                .subscribe(dtoFromDB -> {
-                    atomicReference.set(dtoFromDB);
-                });
-        await().until(() -> atomicReference.get() != null);
-        assertThat(atomicReference.get().getId()).isNotNull();
+        AtomicBoolean completed = new AtomicBoolean(false);
+        BeerDTO testBeer = getSavedBeerDTO();
+
+        beerService.getBeerById(testBeer.getId())
+                .flatMap(foundBeer -> beerService.deleteBeerById(foundBeer.getId()))
+                .doOnSuccess(voidResult -> assertThatThrownBy(() ->
+                        beerService.getBeerById(testBeer.getId()).block())
+                        .isInstanceOf(ResponseStatusException.class)
+                        .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                        .hasMessageContaining("Beer with ID " + testBeer.getId() + " not found"))
+                .doFinally(signal -> completed.set(true))
+                .subscribe();
+
+        await().atMost(Duration.ofSeconds(5)).untilTrue(completed);
     }
 
     @Test
-    @DisplayName("Test delete beer by Id Blocking")
+    @DisplayName("Test delete beer by Id using Block")
     void deleteBeerByIdBlocking() {
         BeerDTO beerToDelete = getSavedBeerDTO();
-        beerService.deleteBeerById(beerToDelete.getId()).block();
-        BeerDTO expectedEmptyBeer = beerService.getBeerById(beerToDelete.getId()).block();
-        assertThat(expectedEmptyBeer).isNull();
+        assertThatThrownBy(() -> {
+            beerService.getBeerById(beerToDelete.getId())
+                    .flatMap(foundBeer -> beerService.deleteBeerById(foundBeer.getId()))
+                    .then(Mono.defer(() -> beerService.getBeerById(beerToDelete.getId()))).block();
+                })
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .hasMessageContaining("Beer with ID " + beerToDelete.getId() + " not found");
     }
 
-    @Test//This test is rubish it does not test anything
-    @DisplayName("Test Patch Using Reactive Streams")
+    @Test//FIXME: this test is rubish
+    @DisplayName("Test Patch Using Block")
     void testPatch() {
         final String newName = "New Beer Name";  // use final so cannot mutate
 

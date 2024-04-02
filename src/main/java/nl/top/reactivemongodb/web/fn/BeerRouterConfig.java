@@ -17,8 +17,6 @@ public class BeerRouterConfig {
     private final BeerHandler handler;
     public static final String BEER_PATH = "/api/v3/beer";
     public static final String BEER_PATH_ID = BEER_PATH + "/{beerId}";
-    public static final String BASE_URL = "http://localhost:8080";
-
     @Bean
     public RouterFunction<ServerResponse> beerRoutes() {
         return route()

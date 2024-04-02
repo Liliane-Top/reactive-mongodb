@@ -34,32 +34,32 @@ public class BeerServiceImpl implements BeerService {
 
     @Override
     public Flux<BeerDTO> listBeers() {
-        return beerRepository.findAll().map(beerMapper::beerTobeerDTO);
+        return beerRepository.findAll().map(beerMapper::beerToBeerDTO);
     }
 
     @Override
     public Flux<BeerDTO> findByBeerStyle(BeerStyle beerStyle) {
-        return beerRepository.findByBeerStyle(beerStyle).map(beerMapper::beerTobeerDTO);
+        return beerRepository.findByBeerStyle(beerStyle).map(beerMapper::beerToBeerDTO);
     }
 
     @Override
     public Mono<BeerDTO> findFirstByBeerName(String beerName) {
         return beerRepository.findFirstByBeerName(beerName)
-                .map(beerMapper::beerTobeerDTO);
+                .map(beerMapper::beerToBeerDTO);
     }
 
     @Override
     public Mono<BeerDTO> saveBeer(Mono<BeerDTO> beerDTO) {
         return beerDTO.map(beerMapper::beerDTOtoBeer)
                 .flatMap(beerRepository::save)
-                .map(beerMapper::beerTobeerDTO);
+                .map(beerMapper::beerToBeerDTO);
     }
 
     @Override
     public Mono<BeerDTO> saveBeer(BeerDTO beerDTO) {
         validate(beerDTO);
         return beerRepository.save(beerMapper.beerDTOtoBeer(beerDTO))
-                .map(beerMapper::beerTobeerDTO);
+                .map(beerMapper::beerToBeerDTO);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class BeerServiceImpl implements BeerService {
         return beerRepository.findById(beerId)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Beer with ID " + beerId + " not found")))
-                .map(beerMapper::beerTobeerDTO);
+                .map(beerMapper::beerToBeerDTO);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class BeerServiceImpl implements BeerService {
                     return foundBeer;
                 })
                 .flatMap(beerRepository::save)
-                .map(beerMapper::beerTobeerDTO);
+                .map(beerMapper::beerToBeerDTO);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class BeerServiceImpl implements BeerService {
                     }
                     return foundBeer;
                 }).flatMap(beerRepository::save)
-                .map(beerMapper::beerTobeerDTO);
+                .map(beerMapper::beerToBeerDTO);
     }
 
     @Override
