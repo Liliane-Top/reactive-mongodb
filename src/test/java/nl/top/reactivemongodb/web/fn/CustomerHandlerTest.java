@@ -57,7 +57,7 @@ class CustomerHandlerTest {
     @Test
     @DisplayName("Test get customer by non-existing ID throwing exception")
     void getCustomerByNonExistingId() {
-        webTestClient.get().uri(CUSTOMER_PATH_ID, 1)
+        webTestClient.get().uri(CUSTOMER_PATH_ID, "1b")
                 .exchange()
                 .expectStatus().isNotFound();
     }

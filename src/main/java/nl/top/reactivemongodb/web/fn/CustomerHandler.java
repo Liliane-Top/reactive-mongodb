@@ -39,25 +39,27 @@ public class CustomerHandler {
     }
 
     public Mono<ServerResponse> getCustomerById(ServerRequest request) {
-        return ServerResponse
-                .ok()
-                .body(customerService.getCustomerById(request.pathVariable("customerId")),
-                        CustomerDTO.class)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)));
+        String customerId = request.pathVariable("customerId");
+        return customerService.getCustomerById(customerId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .flatMap(customer -> ServerResponse.ok().bodyValue(customer));
     }
 
     public Mono<ServerResponse> createNewCustomer(ServerRequest request) {
         return request.bodyToMono(CustomerDTO.class)
                 .flatMap(customerDTO -> {
                     validate(customerDTO);
-                    return customerService.saveCustomer(customerDTO);
+                    return customerService.saveCustomer(customerDTO)
+                            .onErrorResume(error -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to save customer", error)));
                 })
                 .flatMap(savedCustomer -> ServerResponse
                         .created(UriComponentsBuilder
                                 .fromPath(CUSTOMER_PATH_ID)
                                 .build(savedCustomer.getId()))
-                        .build());
+                        .build())
+                .onErrorResume(error -> Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid customer data", error)));
     }
+
 
     public Mono<ServerResponse> updateCustomerById(ServerRequest request) {
         String customerId = request.pathVariable("customerId");
