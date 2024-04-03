@@ -1,4 +1,4 @@
-package nl.top.reactivemongodb.web.fn;
+package nl.top.reactivemongodb.web.fn.handlers;
 
 import lombok.RequiredArgsConstructor;
 import nl.top.reactivemongodb.domain.BeerStyle;
@@ -11,15 +11,16 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import static nl.top.reactivemongodb.web.fn.BeerRouterConfig.BEER_PATH_ID;
+import static nl.top.reactivemongodb.web.fn.config.BeerRouterConfig.BEER_PATH_ID;
 
 @Component
 @RequiredArgsConstructor
-public class BeerHandler {
+public class BeerHandler implements ResourceHandler<BeerHandler> {
 
     private final BeerService beerService;
 
-    public Mono<ServerResponse> listBeers(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> getList(ServerRequest request) {
         Flux<BeerDTO> flux;
         if (request.queryParam("beerStyle").isPresent()) {
             flux = beerService.findByBeerStyle(BeerStyle.valueOf(request.queryParam("beerStyle").get()));
@@ -33,33 +34,34 @@ public class BeerHandler {
                 .body(flux, BeerDTO.class);
     }
 
-    public Mono<ServerResponse> getBeerById(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> getById(ServerRequest request) {
         return ServerResponse
                 .ok()
                 .body(beerService.getBeerById(request.pathVariable("beerId")), BeerDTO.class);
     }
-
-    public Mono<ServerResponse> createNewBeer(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> create(ServerRequest request) {
         return request.bodyToMono(BeerDTO.class)
                 .flatMap(beerService::saveBeer)
                 .flatMap(savedBeer -> ServerResponse.created(UriComponentsBuilder
                         .fromPath(BEER_PATH_ID)
                         .build(savedBeer.getId())).build());
     }
-
-    public Mono<ServerResponse> updateBeerById(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> updateById(ServerRequest request) {
         return request.bodyToMono(BeerDTO.class)
                 .flatMap(beerDTO -> beerService.updateBeer(request.pathVariable("beerId"), beerDTO))
                 .flatMap(savedDTO -> ServerResponse.noContent().build());
     }
-
-    public Mono<ServerResponse> patchBeerById(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> patchById(ServerRequest request) {
         return request.bodyToMono(BeerDTO.class)
                 .flatMap(beerDTO -> beerService.patchBeerById(request.pathVariable("beerId"), beerDTO))
                 .flatMap(savedDTO -> ServerResponse.noContent().build());
     }
-
-    public Mono<ServerResponse> deleteBeerById(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> deleteById(ServerRequest request) {
         return beerService.deleteBeerById(request.pathVariable("beerId"))
                 .then(ServerResponse.noContent().build());
     }

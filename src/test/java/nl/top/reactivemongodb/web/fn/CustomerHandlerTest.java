@@ -9,8 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-import static nl.top.reactivemongodb.web.fn.CustomerRouterConfig.CUSTOMER_PATH;
-import static nl.top.reactivemongodb.web.fn.CustomerRouterConfig.CUSTOMER_PATH_ID;
+import static nl.top.reactivemongodb.web.fn.config.CustomerRouterConfig.CUSTOMER_PATH;
+import static nl.top.reactivemongodb.web.fn.config.CustomerRouterConfig.CUSTOMER_PATH_ID;
 import static org.hamcrest.Matchers.greaterThan;
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -36,6 +36,7 @@ class CustomerHandlerTest {
     }
     @Test
     @Order(1)
+    @DisplayName("Test get list of customers")
     void listCustomers() {
         webTestClient.get().uri(CUSTOMER_PATH)
                 .exchange()

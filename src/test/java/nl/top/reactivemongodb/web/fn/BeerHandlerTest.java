@@ -13,8 +13,8 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 
-import static nl.top.reactivemongodb.web.fn.BeerRouterConfig.BEER_PATH;
-import static nl.top.reactivemongodb.web.fn.BeerRouterConfig.BEER_PATH_ID;
+import static nl.top.reactivemongodb.web.fn.config.BeerRouterConfig.BEER_PATH;
+import static nl.top.reactivemongodb.web.fn.config.BeerRouterConfig.BEER_PATH_ID;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 

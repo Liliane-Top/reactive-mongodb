@@ -1,4 +1,4 @@
-package nl.top.reactivemongodb.web.fn;
+package nl.top.reactivemongodb.web.fn.handlers;
 
 import lombok.RequiredArgsConstructor;
 import nl.top.reactivemongodb.model.CustomerDTO;
@@ -15,11 +15,11 @@ import org.springframework.web.server.ServerWebInputException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
-import static nl.top.reactivemongodb.web.fn.CustomerRouterConfig.CUSTOMER_PATH_ID;
+import static nl.top.reactivemongodb.web.fn.config.CustomerRouterConfig.CUSTOMER_PATH_ID;
 
 @Component
 @RequiredArgsConstructor
-public class CustomerHandler {
+public class CustomerHandler implements ResourceHandler<CustomerHandler> {
 
     private final CustomerService customerService;
     private final Validator validator;
@@ -31,21 +31,23 @@ public class CustomerHandler {
             throw new ServerWebInputException(errors.toString());
         }
     }
-
-    public Mono<ServerResponse> listCustomers(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> getList(ServerRequest request) {
         return ServerResponse
                 .ok()
                 .body(customerService.listCustomers(), CustomerDTO.class);
     }
 
-    public Mono<ServerResponse> getCustomerById(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> getById(ServerRequest request) {
         String customerId = request.pathVariable("customerId");
         return customerService.getCustomerById(customerId)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
                 .flatMap(customer -> ServerResponse.ok().bodyValue(customer));
     }
 
-    public Mono<ServerResponse> createNewCustomer(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> create(ServerRequest request) {
         return request.bodyToMono(CustomerDTO.class)
                 .flatMap(customerDTO -> {
                     validate(customerDTO);
@@ -59,9 +61,8 @@ public class CustomerHandler {
                         .build())
                 .onErrorResume(error -> Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid customer data", error)));
     }
-
-
-    public Mono<ServerResponse> updateCustomerById(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> updateById(ServerRequest request) {
         String customerId = request.pathVariable("customerId");
         return customerService.getCustomerById(customerId)
                 .flatMap(foundCustomer -> request.bodyToMono(CustomerDTO.class))
@@ -72,8 +73,8 @@ public class CustomerHandler {
                 })
                 .flatMap(updatedCustomer -> ServerResponse.noContent().build());
     }
-
-    public Mono<ServerResponse> patchCustomerById(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> patchById(ServerRequest request) {
         String customerId = request.pathVariable("customerId");
         return customerService.getCustomerById(customerId)
                 .flatMap(foundCustomer -> request.bodyToMono(CustomerDTO.class))
@@ -84,8 +85,8 @@ public class CustomerHandler {
                 })
                 .flatMap(patchedCustomer -> ServerResponse.noContent().build());
     }
-
-    public Mono<ServerResponse> deleteCustomerById(ServerRequest request) {
+    @Override
+    public Mono<ServerResponse> deleteById(ServerRequest request) {
         String customerId = request.pathVariable("customerId");
         return customerService.getCustomerById(customerId)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
