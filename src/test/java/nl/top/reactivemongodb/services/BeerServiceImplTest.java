@@ -62,7 +62,7 @@ class BeerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test to find the first beer by beerName using subscribe")
+    @DisplayName("Test find the first beer by beerName using subscribe")
     void findFirstByBeerName() {
         BeerDTO beerDTO1 = getSavedBeerDTO();
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
@@ -78,7 +78,7 @@ class BeerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test to find all beers by a certain Beerstyle")
+    @DisplayName("Test find all beers by a certain Beerstyle")
     void findAllByBeerStyle() {
         BeerDTO beerDTO1 = getSavedBeerDTO();
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
@@ -94,14 +94,28 @@ class BeerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test Save Beer Using Subscriber")
+    @DisplayName("Test get beer by beerId using subscribe")
+    void getBeerById() {
+        AtomicReference<BeerDTO> atomicReference = new AtomicReference<>();
+        beerService.saveBeer(Mono.just(getTestBeerDTO()))
+                .flatMap(beerService::saveBeer)
+                .flatMap(saveddBeerDTO -> beerService.getBeerById(saveddBeerDTO.getId())) // from db
+                .subscribe(dtoFromDB -> {
+                    atomicReference.set(dtoFromDB);
+                });
+        await().until(() -> atomicReference.get() != null);
+        assertThat(atomicReference.get().getId()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Test save beer using subscribe")
     void saveBeerUseSubscriber() {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         AtomicReference<BeerDTO> atomicReference = new AtomicReference<>();
         Mono<BeerDTO> savedMono = beerService.saveBeer(beerDTO);
 
         savedMono.subscribe(savedBeer -> {
-            assertThat(savedBeer.getBeerName()).isEqualTo("Space Dust");//but this works fine
+            assertThat(savedBeer.getBeerName()).isEqualTo("Space Dust");
             assertThat(savedBeer.getId()).isNotNull();
 
             atomicReference.set(savedBeer);
@@ -117,7 +131,22 @@ class BeerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test Save Beer using Block")
+    @DisplayName("Test save beer with subscribe without atomicReference")
+    void saveBeer2() {
+        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
+        Mono<BeerDTO> savedMono = beerService.saveBeer(beerDTO);
+
+        savedMono.subscribe(savedDTO ->
+        {
+            assertThat(savedDTO.getQuantityOnHand()).isEqualTo(12);
+            atomicBoolean.set(true);
+        });
+
+        await().atMost(Duration.ofSeconds(5)).untilTrue(atomicBoolean);
+    }
+
+    @Test
+    @DisplayName("Test save Beer using block")
     void testSaveBeerUsingBlock() {
         BeerDTO savedDTO = beerService.saveBeer(Mono.just(getTestBeerDTO())).block();
         assertThat(savedDTO).isNotNull();
@@ -125,20 +154,7 @@ class BeerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test Update Beer Using Block")
-    void testUpdateBeerBlocking() {
-        final String newName = "Heineken";
-        BeerDTO beerToBeUpdated = getTestBeerDTO();
-        BeerDTO savedBeer = beerService.saveBeer(beerToBeUpdated).block();
-
-        beerToBeUpdated.setBeerName(newName);
-        BeerDTO updatedBeer = beerService.updateBeer(savedBeer.getId(), beerToBeUpdated).block();
-        assertThat(updatedBeer.getBeerName()).isEqualTo(newName);//LETOP!! equals() doesn't work with assertThat
-        assertEquals(newName, updatedBeer.getBeerName());//this works fine
-    }
-
-    @Test
-    @DisplayName("Test Update Beer using subscribe")
+    @DisplayName("Test update Beer using subscribe")
     void testUpdateBeerStreaming() {
         final String newName = "Heineken";
         BeerDTO beerToBeUpdated = getTestBeerDTO();
@@ -165,76 +181,21 @@ class BeerServiceImplTest {
         await().until(() -> atomicReference.get() != null);
         assertThat(atomicReference.get().getBeerName()).isEqualTo(newName);
     }
-
     @Test
-    @DisplayName("Test Patch Beer subscribe")
-    void testPatchBeerStreaming() {
-        final Integer quantity = 20;
-        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
+    @DisplayName("Test update Beer Using block")
+    void testUpdateBeerBlocking() {
+        final String newName = "Heineken";
+        BeerDTO beerToBeUpdated = getTestBeerDTO();
+        BeerDTO savedBeer = beerService.saveBeer(beerToBeUpdated).block();
 
-        BeerDTO savedBeer = getSavedBeerDTO();
-        assertThat(savedBeer.getQuantityOnHand()).isEqualTo(12);
-        assertFalse(savedBeer.getBeerStyle().equals(BeerStyle.PORTER));
-        savedBeer.setQuantityOnHand(quantity);
-        savedBeer.setBeerStyle(null);
-
-        Mono<BeerDTO> mono = beerService.patchBeerById(savedBeer.getId(), savedBeer);
-        mono.subscribe(patcheddBeer -> {
-            beerService.getBeerById(patcheddBeer.getId());
-            assertThat(patcheddBeer.getQuantityOnHand()).isEqualTo(20);
-            assertThat(patcheddBeer.getBeerName()).isEqualTo("Space Dust");
-            atomicBoolean.set(true);
-        });
-
-        await().untilTrue(atomicBoolean);
+        beerToBeUpdated.setBeerName(newName);
+        BeerDTO updatedBeer = beerService.updateBeer(savedBeer.getId(), beerToBeUpdated).block();
+        assertThat(updatedBeer.getBeerName()).isEqualTo(newName);//LETOP!! equals() doesn't work with assertThat
+        assertEquals(newName, updatedBeer.getBeerName());//this works fine
     }
 
     @Test
-    @DisplayName("Test save beer with subscribe")
-    void saveBeer() {
-        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
-        AtomicReference<BeerDTO> atomicReference = new AtomicReference<>();
-        Mono<BeerDTO> savedMono = beerService.saveBeer(Mono.just(beerDTO));
-        savedMono.subscribe(savedDTO -> {
-            atomicReference.set(savedDTO);
-            atomicBoolean.set(true);
-        });
-
-        await().untilTrue(atomicBoolean);
-        assertThat(atomicReference.get().getBeerName()).isEqualTo(beerDTO.getBeerName());
-    }
-
-    @Test
-    @DisplayName("Test save beer with subscribe without atomicReference")
-    void saveBeer2() {
-        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
-        Mono<BeerDTO> savedMono = beerService.saveBeer(beerDTO);
-
-        savedMono.subscribe(savedDTO ->
-        {
-            assertThat(savedDTO.getQuantityOnHand()).isEqualTo(12);
-            atomicBoolean.set(true);
-        });
-
-        await().atMost(Duration.ofSeconds(5)).untilTrue(atomicBoolean);
-    }
-
-    @Test
-    @DisplayName("Test get beer by beerId using subscribe")
-    void getBeerById() {
-        AtomicReference<BeerDTO> atomicReference = new AtomicReference<>();
-        beerService.saveBeer(Mono.just(getTestBeerDTO()))
-                .flatMap(beerService::saveBeer)
-                .flatMap(saveddBeerDTO -> beerService.getBeerById(saveddBeerDTO.getId())) // from db
-                .subscribe(dtoFromDB -> {
-                    atomicReference.set(dtoFromDB);
-                });
-        await().until(() -> atomicReference.get() != null);
-        assertThat(atomicReference.get().getId()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Test delete beer by beerId using subscribe")
+    @DisplayName("Test delete beer by Id using subscribe")
     void deleteBeerByIdStreaming() {
         AtomicBoolean completed = new AtomicBoolean(false);
         BeerDTO testBeer = getSavedBeerDTO();
@@ -267,21 +228,38 @@ class BeerServiceImplTest {
                 .hasMessageContaining("Beer with ID " + beerToDelete.getId() + " not found");
     }
 
-    @Test//FIXME: this test is rubish
-    @DisplayName("Test Patch Using Block")
+    @Test
+    @DisplayName("Test Patch Beer subscribe")
+    void testPatchBeerStreaming() {
+        final Integer quantity = 20;
+        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
+
+        BeerDTO savedBeer = getSavedBeerDTO();
+        assertThat(savedBeer.getQuantityOnHand()).isEqualTo(12);
+        assertFalse(savedBeer.getBeerStyle().equals(BeerStyle.PORTER));
+        savedBeer.setQuantityOnHand(quantity);
+        savedBeer.setBeerStyle(null);
+
+        Mono<BeerDTO> mono = beerService.patchBeerById(savedBeer.getId(), savedBeer);
+        mono.subscribe(patcheddBeer -> {
+            beerService.getBeerById(patcheddBeer.getId());
+            assertThat(patcheddBeer.getQuantityOnHand()).isEqualTo(20);
+            assertThat(patcheddBeer.getBeerName()).isEqualTo("Space Dust");
+            atomicBoolean.set(true);
+        });
+
+        await().untilTrue(atomicBoolean);
+    }
+
+    @Test
+    @DisplayName("Test patch beer using block")
     void testPatch() {
-        final String newName = "New Beer Name";  // use final so cannot mutate
+        final String newName = "New Beer Name";
+        BeerDTO testBeer = getSavedBeerDTO();
+        testBeer.setBeerName(newName);
 
-        AtomicReference<BeerDTO> atomicDto = new AtomicReference<>();
+        BeerDTO updatedBeer = beerService.patchBeerById(testBeer.getId(), testBeer).block();
 
-        beerService.saveBeer(Mono.just(getTestBeerDTO()))
-                .subscribe(savedDTO -> atomicDto.set(savedDTO));
-
-        await().until(() -> atomicDto.get() != null);
-
-        beerService.patchBeerById(atomicDto.get().getId(), atomicDto.get())
-                .subscribe(beerDto -> {
-                    System.out.println(beerDto.getBeerName());
-                });
+        assertThat(updatedBeer.getBeerName()).isEqualTo(newName);
     }
 }

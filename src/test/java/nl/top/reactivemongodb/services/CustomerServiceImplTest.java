@@ -54,6 +54,7 @@ class CustomerServiceImplTest {
     }
 
     @Test
+    @DisplayName("Test find all customers")
     void listCustomers() {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         Flux<CustomerDTO> flux = customerService.listCustomers();
@@ -63,7 +64,7 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test find first Customer by Name subscriber")
+    @DisplayName("Test find first customer by name  using subscribe")
     void findFirstByCustomerName() {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         customerService.findFirstByCustomerName("Robert van Leeuwen").subscribe(
@@ -76,15 +77,14 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test find first Customer by Name blocking")
+    @DisplayName("Test find first customer by name using block")
     void findFirstByCustomerNameBlocking() {
         CustomerDTO customer = customerService.findFirstByCustomerName("Ton Kraak").block();
         assertThat(customer.getCustomerName()).isEqualTo("Ton Kraak");
-
     }
 
     @Test
-    @DisplayName("Test save Customer using Subscriber")
+    @DisplayName("Test save customer using subscribe")
     void saveCustomer() {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         AtomicReference<CustomerDTO> atomicReference = new AtomicReference<>();
@@ -108,16 +108,15 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test save Customer using Block")
+    @DisplayName("Test save customer using block")
     void saveCustomerUsingBlock() {
         CustomerDTO savedDTO = customerService.saveCustomer(Mono.just(getTestCustomerDTO())).block();
-//        assertThat(savedDTO).isNull();
         assertThat(savedDTO).isNotNull();
         assertThat(savedDTO.getId()).isNotNull();
     }
 
     @Test
-    @DisplayName("Test get Customer by customerId using Subscriber")
+    @DisplayName("Test get customer by Id using subscribe")
     void getCustomerById() {
         CustomerDTO savedCustomer = getSavedCustomerDTO();
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
@@ -133,14 +132,14 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test get Customer by customerId using Block")
+    @DisplayName("Test get customer by Id using block")
     void getCustomerByIdBlock() {
         CustomerDTO customer = customerService.getCustomerById(getSavedCustomerDTO().getId()).block();
         assertThat(customer.getCustomerName()).isEqualTo("Olivia Newton John");
     }
 
     @Test
-    @DisplayName("Test update customer using Subscriber")
+    @DisplayName("Test update customer using subscribe")
     void updateCustomer() {
         final String newName = "Cora van Mora";
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
@@ -156,7 +155,7 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test update customer using Block")
+    @DisplayName("Test update customer using block")
     void updateCustomerBlocking() {
         final String newName = "Annemarie van Ginkel";
         CustomerDTO customerToBeUpdated = getSavedCustomerDTO();
@@ -167,7 +166,7 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test patch customer using Subscriber")
+    @DisplayName("Test patch customer using subscribe")
     void patchCustomer() {
         final String newName = "Cora van Mora";
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
@@ -183,7 +182,7 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test patch customer using Block")
+    @DisplayName("Test patch customer using block")
     void patchCustomerBlocking() {
         final String newName = "Annemarie van Ginkel";
         CustomerDTO customerToBeUpdated = getSavedCustomerDTO();
@@ -194,7 +193,7 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test delete customer by customerId Subscribe")
+    @DisplayName("Test delete customer by Id using subscribe")
     void deleteCustomerByIdSubscribe() {
         CustomerDTO testCustomer = getSavedCustomerDTO();
         AtomicBoolean completed = new AtomicBoolean(false);
@@ -213,7 +212,7 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    @DisplayName("Test delete customer by customerId with StepVerifier")
+    @DisplayName("Test delete customer Id with StepVerifier")
     void deleteCustomerByIdWithStepVerifier() {
         CustomerDTO testCustomer = getSavedCustomerDTO();
 
@@ -233,9 +232,8 @@ class CustomerServiceImplTest {
                 .verify();
     }
 
-
     @Test
-    @DisplayName("Test delete customer by customerId Block")
+    @DisplayName("Test delete customer by Id using block")
     void deleteCustomerByIdBlocking() {
         CustomerDTO testCustomer = getSavedCustomerDTO();
 

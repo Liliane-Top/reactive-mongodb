@@ -10,7 +10,7 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
-public abstract class GenericRouterConfig <T extends ResourceHandler<?>> {
+public abstract class GenericRouterConfig<T extends ResourceHandler<?>> {
     protected String basePath;
     protected String basePathWithId;
     protected T handler;
