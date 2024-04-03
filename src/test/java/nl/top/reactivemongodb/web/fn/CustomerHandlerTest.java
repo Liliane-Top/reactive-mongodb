@@ -28,10 +28,10 @@ class CustomerHandlerTest {
     }
     private static CustomerDTO getTestCustomerDTO(){
         return CustomerDTO.builder()
-                .id(null)
+//                .id(null)
                 .customerName("Els Stam")
-                .lastModifiedDate(null)
-                .createdDate(null)
+//                .lastModifiedDate(null)
+//                .createdDate(null)
                 .build();
     }
     @Test

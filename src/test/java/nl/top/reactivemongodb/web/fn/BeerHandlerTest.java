@@ -43,6 +43,7 @@ class BeerHandlerTest {
     }
     @Test
     @Order(1)
+    @DisplayName("Test get list of beers")
     void listBeer() {
         webTestClient.get().uri(BEER_PATH)
                 .exchange()

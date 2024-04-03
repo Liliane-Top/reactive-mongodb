@@ -8,15 +8,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
@@ -38,6 +40,8 @@ class CustomerServiceImplTest {
     private static Customer getTestCustomer() {
         return Customer.builder()
                 .customerName("Olivia Newton John")
+                .createdDate(LocalDateTime.now())
+                .lastModifiedDate(LocalDateTime.now())
                 .build();
     }
 
@@ -200,13 +204,35 @@ class CustomerServiceImplTest {
                 .doOnSuccess(voidResult -> assertThatThrownBy(() ->
                         customerService.getCustomerById(testCustomer.getId()).block())
                         .isInstanceOf(ResponseStatusException.class)
-                        .hasFieldOrPropertyWithValue("status", NOT_FOUND)
+                        .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
                         .hasMessageContaining("Customer with ID " + testCustomer.getId() + "not found"))
                 .doFinally(signal -> completed.set(true))
                 .subscribe();
 
         await().atMost(Duration.ofSeconds(5)).untilTrue(completed);
     }
+
+    @Test
+    @DisplayName("Test delete customer by customerId with StepVerifier")
+    void deleteCustomerByIdWithStepVerifier() {
+        CustomerDTO testCustomer = getSavedCustomerDTO();
+
+        StepVerifier.create(customerService.getCustomerById(testCustomer.getId()))
+                .expectNextCount(1)
+                .expectComplete()
+                .verify();
+
+        StepVerifier.create(customerService.deleteCustomerById(testCustomer.getId()))
+                .expectComplete()
+                .verify();
+
+        StepVerifier.create(customerService.getCustomerById(testCustomer.getId()))
+                .expectErrorMatches(throwable -> throwable instanceof ResponseStatusException &&
+                        ((ResponseStatusException) throwable).getStatusCode().equals(HttpStatus.NOT_FOUND) &&
+                        throwable.getMessage().contains("Customer with ID " + testCustomer.getId() + " not found"))
+                .verify();
+    }
+
 
     @Test
     @DisplayName("Test delete customer by customerId Block")
@@ -219,7 +245,7 @@ class CustomerServiceImplTest {
                     .then(Mono.defer(() -> customerService.getCustomerById(testCustomer.getId()))).block();
         })
                 .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", NOT_FOUND)
-                .hasMessageContaining("Customer with ID " + testCustomer.getId() + "not found");
+                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .hasMessageContaining("Customer with ID " + testCustomer.getId() + " not found");
     }
 }

@@ -57,6 +57,7 @@ class BeerServiceImplTest {
     }
 
     public BeerDTO getSavedBeerDTO() {
+
         return beerService.saveBeer(Mono.just(getTestBeerDTO())).block();
     }
 
@@ -255,6 +256,7 @@ class BeerServiceImplTest {
     @DisplayName("Test delete beer by Id using Block")
     void deleteBeerByIdBlocking() {
         BeerDTO beerToDelete = getSavedBeerDTO();
+
         assertThatThrownBy(() -> {
             beerService.getBeerById(beerToDelete.getId())
                     .flatMap(foundBeer -> beerService.deleteBeerById(foundBeer.getId()))
