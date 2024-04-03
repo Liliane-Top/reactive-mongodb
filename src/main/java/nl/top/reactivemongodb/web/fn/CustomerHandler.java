@@ -3,9 +3,15 @@ package nl.top.reactivemongodb.web.fn;
 import lombok.RequiredArgsConstructor;
 import nl.top.reactivemongodb.model.CustomerDTO;
 import nl.top.reactivemongodb.services.CustomerService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.Errors;
+import org.springframework.validation.Validator;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebInputException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
@@ -16,6 +22,15 @@ import static nl.top.reactivemongodb.web.fn.CustomerRouterConfig.CUSTOMER_PATH_I
 public class CustomerHandler {
 
     private final CustomerService customerService;
+    private final Validator validator;
+
+    private void validate(CustomerDTO customerDTO) {
+        Errors errors = new BeanPropertyBindingResult(customerDTO, "customerDTO");
+        validator.validate(customerDTO, errors);
+        if (errors.hasErrors()) {
+            throw new ServerWebInputException(errors.toString());
+        }
+    }
 
     public Mono<ServerResponse> listCustomers(ServerRequest request) {
         return ServerResponse
@@ -27,34 +42,53 @@ public class CustomerHandler {
         return ServerResponse
                 .ok()
                 .body(customerService.getCustomerById(request.pathVariable("customerId")),
-                        CustomerDTO.class);
+                        CustomerDTO.class)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)));
     }
 
     public Mono<ServerResponse> createNewCustomer(ServerRequest request) {
         return request.bodyToMono(CustomerDTO.class)
-                .flatMap(customerService::saveCustomer)
+                .flatMap(customerDTO -> {
+                    validate(customerDTO);
+                    return customerService.saveCustomer(customerDTO);
+                })
                 .flatMap(savedCustomer -> ServerResponse
                         .created(UriComponentsBuilder
                                 .fromPath(CUSTOMER_PATH_ID)
                                 .build(savedCustomer.getId()))
                         .build());
     }
+
     public Mono<ServerResponse> updateCustomerById(ServerRequest request) {
-        return request.bodyToMono(CustomerDTO.class)
-                .flatMap(customerDTO -> customerService.updateCustomer(
-                        request.pathVariable("customerId"), customerDTO))
+        String customerId = request.pathVariable("customerId");
+        return customerService.getCustomerById(customerId)
+                .flatMap(foundCustomer -> request.bodyToMono(CustomerDTO.class))
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .flatMap(customerDTO -> {
+                    validate(customerDTO);
+                    return customerService.updateCustomer(customerId, customerDTO);
+                })
                 .flatMap(updatedCustomer -> ServerResponse.noContent().build());
     }
 
     public Mono<ServerResponse> patchCustomerById(ServerRequest request) {
-        return request.bodyToMono(CustomerDTO.class)
-                .flatMap(customerDTO -> customerService.patchCustomer(
-                        request.pathVariable("customerId"), customerDTO))
+        String customerId = request.pathVariable("customerId");
+        return customerService.getCustomerById(customerId)
+                .flatMap(foundCustomer -> request.bodyToMono(CustomerDTO.class))
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .flatMap(customerDTO -> {
+                    validate(customerDTO);
+                    return customerService.patchCustomer(customerId, customerDTO);
+                })
                 .flatMap(patchedCustomer -> ServerResponse.noContent().build());
     }
 
     public Mono<ServerResponse> deleteCustomerById(ServerRequest request) {
-        return customerService.deleteCustomerById(request.pathVariable("customerId"))
+        String customerId = request.pathVariable("customerId");
+        return customerService.getCustomerById(customerId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .then(customerService.deleteCustomerById(customerId))
                 .then(ServerResponse.noContent().build());
+
     }
 }
