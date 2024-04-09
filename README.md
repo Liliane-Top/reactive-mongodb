@@ -15,7 +15,7 @@ Please refer to the official [MongoDB Docker Image](https://hub.docker.com/_/mon
 If you have to download [Docker desktop version](https://docs.docker.com/desktop/install) look here. 
 Or Optional, run via docker compose. Save following as stack.yml
 
-`
+```
 #Use root/example as user/password credentials
 version: '3.1'
  
@@ -39,7 +39,7 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
-    `
+ ```
       
 User the command docker-compose -f stack.yml up  from same directory as file. The Docker compose file will expose a database browser on http://localhost:8081.
 
