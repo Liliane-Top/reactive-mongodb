@@ -41,6 +41,6 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
  ```
       
-User the command docker-compose -f stack.yml up  from same directory as file. The Docker compose file will expose a database browser on http://localhost:8081.
+Use the command `docker-compose -f stack.yml up`  from same directory as file. The Docker compose file will expose a database browser on http://localhost:8081.
 
 I use a popular MongoDB client called Studio 3T. To install it look [here](https://studio3t.com/). 
