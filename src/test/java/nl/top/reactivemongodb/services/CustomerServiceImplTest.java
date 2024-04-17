@@ -3,9 +3,7 @@ package nl.top.reactivemongodb.services;
 import nl.top.reactivemongodb.domain.Customer;
 import nl.top.reactivemongodb.mapper.CustomerMapper;
 import nl.top.reactivemongodb.model.CustomerDTO;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -24,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CustomerServiceImplTest {
 
     @Autowired
@@ -55,16 +54,18 @@ class CustomerServiceImplTest {
 
     @Test
     @DisplayName("Test find all customers")
+    @Order(1)
     void listCustomers() {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         Flux<CustomerDTO> flux = customerService.listCustomers();
-        assertThat(flux.count().block()).isGreaterThanOrEqualTo(3L);
+        flux.count().subscribe(count -> assertThat(count).isEqualTo(3L));
         atomicBoolean.set(true);
         await().untilTrue(atomicBoolean);
     }
 
     @Test
-    @DisplayName("Test find first customer by name  using subscribe")
+    @DisplayName("Test find first customer by name using subscribe")
+    @Order(2)
     void findFirstByCustomerName() {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         customerService.findFirstByCustomerName("Robert van Leeuwen").subscribe(
@@ -75,11 +76,12 @@ class CustomerServiceImplTest {
         );
         await().untilTrue(atomicBoolean);
     }
-
     @Test
     @DisplayName("Test find first customer by name using block")
+    @Order(3)
     void findFirstByCustomerNameBlocking() {
         CustomerDTO customer = customerService.findFirstByCustomerName("Ton Kraak").block();
+        assertThat(customer).isNotNull();
         assertThat(customer.getCustomerName()).isEqualTo("Ton Kraak");
     }
 
@@ -135,6 +137,7 @@ class CustomerServiceImplTest {
     @DisplayName("Test get customer by Id using block")
     void getCustomerByIdBlock() {
         CustomerDTO customer = customerService.getCustomerById(getSavedCustomerDTO().getId()).block();
+        assertThat(customer).isNotNull();
         assertThat(customer.getCustomerName()).isEqualTo("Olivia Newton John");
     }
 
@@ -162,6 +165,7 @@ class CustomerServiceImplTest {
         customerToBeUpdated.setCustomerName(newName);
         CustomerDTO updatedCustomer = customerService.
                 updateCustomer(customerToBeUpdated.getId(), customerToBeUpdated).block();
+        assertThat(updatedCustomer).isNotNull();
         assertThat(updatedCustomer.getCustomerName()).isEqualTo(newName);
     }
 
@@ -189,6 +193,7 @@ class CustomerServiceImplTest {
         customerToBeUpdated.setCustomerName(newName);
         CustomerDTO updatedCustomer = customerService.
                 patchCustomer(customerToBeUpdated.getId(), customerToBeUpdated).block();
+        assertThat(updatedCustomer).isNotNull();
         assertThat(updatedCustomer.getCustomerName()).isEqualTo(newName);
     }
 
@@ -237,11 +242,9 @@ class CustomerServiceImplTest {
     void deleteCustomerByIdBlocking() {
         CustomerDTO testCustomer = getSavedCustomerDTO();
 
-        assertThatThrownBy(() -> {
-            customerService.getCustomerById(testCustomer.getId())
-                    .flatMap(foundCustomer -> customerService.deleteCustomerById(foundCustomer.getId()))
-                    .then(Mono.defer(() -> customerService.getCustomerById(testCustomer.getId()))).block();
-        })
+        assertThatThrownBy(() -> customerService.getCustomerById(testCustomer.getId())
+                .flatMap(foundCustomer -> customerService.deleteCustomerById(foundCustomer.getId()))
+                .then(Mono.defer(() -> customerService.getCustomerById(testCustomer.getId()))).block())
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
                 .hasMessageContaining("Customer with ID " + testCustomer.getId() + " not found");
